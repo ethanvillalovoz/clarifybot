@@ -45,6 +45,3 @@ Contributions to the ClarifyBot project are welcome! Please submit a pull reques
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for more details.
-
-## Acknowledgments
-We would like to thank the contributors and the community for their support in developing ClarifyBot.
