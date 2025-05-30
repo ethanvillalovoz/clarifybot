@@ -8,7 +8,7 @@ from gui.app import run_gui
 def main():
     # Initialize the reward model and question generator
     reward_model = RewardModel()
-    question_generator = QuestionGenerator()
+    question_generator = QuestionGenerator(llm_model=None)
 
     # Start the GUI application
     run_gui(reward_model, question_generator)

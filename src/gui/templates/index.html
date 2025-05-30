@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ClarifyBot</title>
+</head>
+<body>
+    <h1>Welcome to ClarifyBot!</h1>
+    <form id="feedback-form">
+        <label for="feedback">Enter your feedback:</label>
+        <input type="text" id="feedback" name="feedback" required>
+        <button type="submit">Submit</button>
+    </form>
+    <div id="questions"></div>
+    <script>
+        document.getElementById('feedback-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const feedback = document.getElementById('feedback').value;
+            const response = await fetch('/submit_feedback', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({feedback})
+            });
+            const data = await response.json();
+            document.getElementById('questions').innerHTML =
+                '<h2>Clarification Questions:</h2><ul>' +
+                data.questions.map(q => `<li>${q}</li>`).join('') +
+                '</ul>';
+        };
+    </script>
+</body>
+</html>

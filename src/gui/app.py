@@ -15,5 +15,5 @@ def submit_feedback():
     questions = question_generator.generate_clarification_questions(feedback)
     return jsonify(questions=questions)
 
-if __name__ == '__main__':
+def run_gui(reward_model, question_generator):
     app.run(debug=True)
