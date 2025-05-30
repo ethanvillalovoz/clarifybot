@@ -2,30 +2,106 @@
 <html>
 <head>
     <title>ClarifyBot</title>
+    <style>
+        body { background: #f8f9fa; }
+        #chat-window {
+            max-width: 600px;
+            margin: 40px auto 0 auto;
+            border: 1px solid #e0e0e0;
+            padding: 24px;
+            border-radius: 12px;
+            background: #fff;
+            min-height: 350px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .user-msg {
+            align-self: flex-end;
+            background: #007bff;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 18px 18px 4px 18px;
+            margin: 2px 0;
+            max-width: 70%;
+            word-break: break-word;
+        }
+        .bot-msg {
+            align-self: flex-start;
+            background: #e9ecef;
+            color: #222;
+            padding: 10px 16px;
+            border-radius: 18px 18px 18px 4px;
+            margin: 2px 0;
+            max-width: 70%;
+            word-break: break-word;
+        }
+        #input-row {
+            display: flex;
+            margin: 32px auto 0 auto;
+            max-width: 600px;
+        }
+        #user-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
+        #send-btn {
+            margin-left: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #007bff;
+            color: #fff;
+            font-size: 1em;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to ClarifyBot!</h1>
-    <form id="feedback-form">
-        <label for="feedback">Enter your feedback:</label>
-        <input type="text" id="feedback" name="feedback" required>
-        <button type="submit">Submit</button>
-    </form>
-    <div id="questions"></div>
-    <script>
-        document.getElementById('feedback-form').onsubmit = async function(e) {
-            e.preventDefault();
-            const feedback = document.getElementById('feedback').value;
+    <div id="chat-window"></div>
+    <div id="input-row">
+        <input type="text" id="user-input" placeholder="Type your feedback..." autocomplete="off" />
+        <button id="send-btn">Send</button>
+    </div>
+   <script>
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        function appendMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = sender === 'user' ? 'user-msg' : 'bot-msg';
+            msgDiv.textContent = text;
+            chatWindow.appendChild(msgDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        let lastBotQuestions = [];
+
+        sendBtn.onclick = async function() {
+            const feedback = userInput.value.trim();
+            if (!feedback) return;
+            appendMessage(feedback, 'user');
+            userInput.value = '';
+
+            // Send the user's message to the backend for clarification
             const response = await fetch('/submit_feedback', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({feedback})
             });
             const data = await response.json();
-            document.getElementById('questions').innerHTML =
-                '<h2>Clarification Questions:</h2><ul>' +
-                data.questions.map(q => `<li>${q}</li>`).join('') +
-                '</ul>';
+            lastBotQuestions = data.questions;
+            data.questions.forEach(q => appendMessage(q, 'bot'));
         };
+
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') sendBtn.click();
+        });
     </script>
 </body>
 </html>
