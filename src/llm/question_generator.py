@@ -1,5 +1,5 @@
 class QuestionGenerator:
-    def __init__(self, llm_model):
+    def __init__(self, llm_model=None):
         self.llm_model = llm_model
 
     def generate_clarification_questions(self, ambiguous_feedback):
@@ -12,8 +12,7 @@ class QuestionGenerator:
         Returns:
         list: A list of clarification questions to refine user preferences.
         """
-        # Here, we would use the LLM model to generate questions.
-        # This is a placeholder for the actual implementation.
+        # Placeholder logic
         questions = [
             f"What do you mean by '{ambiguous_feedback}'?",
             f"Can you clarify your preference regarding '{ambiguous_feedback}'?",

@@ -37,6 +37,16 @@
             max-width: 70%;
             word-break: break-word;
         }
+        .summary-msg {
+            align-self: center;
+            background: #ffe066;
+            color: #222;
+            padding: 10px 16px;
+            border-radius: 12px;
+            margin: 8px 0;
+            max-width: 90%;
+            font-weight: bold;
+        }
         #input-row {
             display: flex;
             margin: 32px auto 0 auto;
@@ -67,36 +77,53 @@
         <input type="text" id="user-input" placeholder="Type your feedback..." autocomplete="off" />
         <button id="send-btn">Send</button>
     </div>
-   <script>
+    <script>
         const chatWindow = document.getElementById('chat-window');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
+        let conversation = [];
 
-        function appendMessage(text, sender) {
+        function appendMessage(text, sender, isSummary=false) {
             const msgDiv = document.createElement('div');
-            msgDiv.className = sender === 'user' ? 'user-msg' : 'bot-msg';
+            if (isSummary) {
+                msgDiv.className = 'summary-msg';
+            } else {
+                msgDiv.className = sender === 'user' ? 'user-msg' : 'bot-msg';
+            }
             msgDiv.textContent = text;
             chatWindow.appendChild(msgDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
+            if (!isSummary) conversation.push({sender, text});
         }
-
-        let lastBotQuestions = [];
 
         sendBtn.onclick = async function() {
             const feedback = userInput.value.trim();
             if (!feedback) return;
             appendMessage(feedback, 'user');
             userInput.value = '';
+            userInput.focus();
 
-            // Send the user's message to the backend for clarification
+            // Show loading indicator
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'bot-msg';
+            loadingDiv.textContent = '...';
+            chatWindow.appendChild(loadingDiv);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
             const response = await fetch('/submit_feedback', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({feedback})
+                body: JSON.stringify({feedback, conversation})
             });
             const data = await response.json();
-            lastBotQuestions = data.questions;
+
+            // Remove loading indicator
+            chatWindow.removeChild(loadingDiv);
+
             data.questions.forEach(q => appendMessage(q, 'bot'));
+            if (data.summary) {
+                appendMessage(data.summary, 'bot', true);
+            }
         };
 
         userInput.addEventListener('keydown', function(e) {
