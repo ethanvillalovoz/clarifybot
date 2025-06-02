@@ -1,5 +1,6 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+from rapidfuzz import fuzz
 
 class QuestionGenerator:
     def __init__(self, llm_model=None):
@@ -33,6 +34,7 @@ class QuestionGenerator:
             prompt = (
                 "You are a helpful, empathetic assistant. "
                 "Given the following conversation and user feedback, generate 3 open-ended, non-repetitive, and actionable clarification questions. "
+                "Each question should address a different aspect of the user's situation (for example: emotions, practical details, or future goals). "
                 "Avoid yes/no questions, be supportive, and do not repeat yourself.\n"
                 f"{context}"
                 f"User feedback: \"{feedback}\"\n\n"
@@ -45,13 +47,33 @@ class QuestionGenerator:
                     **inputs,
                     max_new_tokens=120,
                     do_sample=True,
-                    temperature=0.7,
+                    temperature=0.8,
                     pad_token_id=self.tokenizer.eos_token_id
                 )
             response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            print("LLM raw output:", response)
+
             # Extract questions (split by numbers)
             questions = [q.strip() for q in response.split('\n') if q.strip() and q.strip()[0].isdigit()]
-            return questions[:3]
+
+            # Fuzzy filter for uniqueness
+            unique_questions = []
+            for q in questions:
+                if all(fuzz.ratio(q, uq) < 80 for uq in unique_questions):
+                    unique_questions.append(q)
+                if len(unique_questions) == 3:
+                    break
+
+            # Ensure proper formatting
+            def format_question(q):
+                q = q.strip()
+                if not q.endswith('?'):
+                    q += '?'
+                return q[0].upper() + q[1:] if q else q
+
+            unique_questions = [format_question(q) for q in unique_questions]
+
+            return unique_questions
         else:
             # Fallback placeholder logic
             questions = [
