@@ -47,5 +47,15 @@ def submit_feedback():
     confidence = min(len(conversation) * 15, 100)  # Example logic
     return jsonify(questions=questions, summary=summary, confidence=confidence)
 
+@app.route('/rate_question', methods=['POST'])
+def rate_question():
+    data = request.json
+    question = data.get('question')
+    rating = data.get('rating')  # 'up' or 'down'
+    # Save to a log file for now
+    with open("question_ratings.log", "a") as f:
+        f.write(f"{question}\t{rating}\n")
+    return jsonify(success=True)
+
 def run_gui():
     app.run(debug=True)

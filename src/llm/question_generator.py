@@ -1,6 +1,7 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from rapidfuzz import fuzz
+import random
 
 class QuestionGenerator:
     def __init__(self, llm_model=None):
@@ -13,7 +14,7 @@ class QuestionGenerator:
             self.tokenizer = None
             self.device = "cpu"
 
-    def generate_clarification_questions(self, feedback, conversation=None):
+    def generate_clarification_questions(self, feedback, conversation=None, language="English"):
         """
         Generate clarification questions based on ambiguous human feedback and recent conversation context.
 
@@ -31,16 +32,39 @@ class QuestionGenerator:
                 f"{msg['sender'].capitalize()}: {msg['text']}" for msg in conversation[-3:]
             ) + "\n"
         if self.model and self.tokenizer:
-            prompt = (
-                "You are a helpful, empathetic assistant. "
-                "Given the following conversation and user feedback, generate 3 open-ended, non-repetitive, and actionable clarification questions. "
-                "Each question should address a different aspect of the user's situation (for example: emotions, practical details, or future goals). "
-                "Avoid yes/no questions, be supportive, and do not repeat yourself.\n"
-                f"{context}"
-                f"User feedback: \"{feedback}\"\n\n"
-                "Questions:\n"
-                "1."
+            # Example priming
+            example_block = (
+                "Example questions:\n"
+                "1. Can you tell me more about what led you to feel this way?\n"
+                "2. What would help you feel better in this situation?\n"
+                "3. Are there specific goals or changes you'd like to work towards?\n"
             )
+
+            prompt_templates = [
+                (
+                    "You are a helpful, empathetic assistant. "
+                    "Given the following conversation and user feedback, generate 3 open-ended, non-repetitive, and actionable clarification questions. "
+                    "Each question should address a different aspect of the user's situation (for example: emotions, practical details, or future goals). "
+                    "Avoid yes/no questions, be supportive, and do not repeat yourself.\n"
+                    f"{context}"
+                    f"{example_block}"
+                    f"User feedback: \"{feedback}\"\n\n"
+                    "Questions:\n"
+                    "1."
+                ),
+                (
+                    "Imagine you are supporting someone who just shared the following feedback. "
+                    "Write 3 unique, open-ended questions to help them clarify their thoughts and feelings. "
+                    "Be gentle, supportive, and specific. Avoid yes/no questions.\n"
+                    f"{context}"
+                    f"{example_block}"
+                    f"User feedback: \"{feedback}\"\n\n"
+                    "Questions:\n"
+                    "1."
+                )
+            ]
+            prompt = random.choice(prompt_templates)
+            prompt = f"Please respond in {language}.\n" + prompt
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             with torch.no_grad():
                 outputs = self.model.generate(
@@ -52,6 +76,9 @@ class QuestionGenerator:
                 )
             response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
             print("LLM raw output:", response)
+
+            with open("llm_outputs.log", "a") as f:
+                f.write(f"PROMPT:\n{prompt}\nOUTPUT:\n{response}\n{'='*40}\n")
 
             # Extract questions (split by numbers)
             questions = [q.strip() for q in response.split('\n') if q.strip() and q.strip()[0].isdigit()]
