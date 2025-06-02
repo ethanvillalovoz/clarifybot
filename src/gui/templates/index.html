@@ -39,6 +39,12 @@
             word-break: break-word;
             position: relative;
         }
+        .bot-msg .icon {
+            margin-right: 6px;
+            color: #007bff;
+            font-size: 1.1em;
+            vertical-align: middle;
+        }
         .summary-msg {
             align-self: center;
             background: #ffe066;
@@ -88,6 +94,36 @@
             font-size: 1em;
             cursor: pointer;
         }
+        .edit-btn {
+            background: none;
+            border: none;
+            color: #ffc107;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-left: 8px;
+        }
+        #confidence-bar-container {
+            max-width: 600px;
+            margin: 16px auto 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #confidence-bar {
+            width: 200px;
+            height: 18px;
+            border-radius: 10px;
+            appearance: none;
+            background: #e9ecef;
+        }
+        #confidence-bar::-webkit-progress-value {
+            border-radius: 10px;
+            background: #007bff;
+        }
+        #confidence-bar::-moz-progress-bar {
+            border-radius: 10px;
+            background: #007bff;
+        }
     </style>
 </head>
 <body>
@@ -97,11 +133,18 @@
         <input type="text" id="user-input" placeholder="Type your feedback..." autocomplete="off" />
         <button id="send-btn">Send</button>
     </div>
+    <div id="confidence-bar-container">
+        <label for="confidence-bar">Alignment Confidence:</label>
+        <progress id="confidence-bar" value="0" max="100"></progress>
+        <span id="confidence-value">0%</span>
+    </div>
     <script>
         const chatWindow = document.getElementById('chat-window');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const clearBtn = document.getElementById('clear-btn');
+        const confidenceBar = document.getElementById('confidence-bar');
+        const confidenceValue = document.getElementById('confidence-value');
         let conversation = [];
         let typingDiv = null;
 
@@ -120,13 +163,35 @@
                 label = '<strong>You</strong>';
             } else {
                 msgDiv.className = 'bot-msg';
-                label = '<strong>ClarifyBot</strong>';
+                label = '<span class="icon">❓</span><strong>ClarifyBot</strong>';
             }
             if (!time) time = formatTime(new Date());
-            msgDiv.innerHTML = `${label}: <span>${text}</span> <span class="timestamp">${time}</span>`;
+            msgDiv.innerHTML = `${label}: <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
+            // Add edit button to last user message
+            if (sender === 'user') {
+                const editBtn = document.createElement('button');
+                editBtn.className = 'edit-btn';
+                editBtn.innerHTML = '✏️ Edit';
+                editBtn.onclick = function() {
+                    userInput.value = text;
+                    userInput.focus();
+                    // Remove this message from chat and conversation
+                    chatWindow.removeChild(msgDiv);
+                    conversation = conversation.filter(m => !(m.sender === 'user' && m.text === text && m.time === time));
+                };
+                msgDiv.appendChild(editBtn);
+            }
             chatWindow.appendChild(msgDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
             if (!isSummary) conversation.push({sender, text, time});
+            updateConfidenceBar();
+        }
+
+        function updateConfidenceBar() {
+            // Example: confidence increases with more conversation turns, maxing at 100%
+            let val = Math.min(conversation.length * 15, 100);
+            document.getElementById('confidence-bar').value = val;
+            document.getElementById('confidence-value').textContent = val + '%';
         }
 
         sendBtn.onclick = async function() {
@@ -160,6 +225,10 @@
             if (data.summary) {
                 appendMessage(data.summary, 'bot', true);
             }
+            // Update confidence bar
+            confidenceBar.value = data.confidence || 0;
+            confidenceValue.innerText = `${Math.round(confidenceBar.value)}%`;
+            updateConfidenceBar();
         };
 
         userInput.addEventListener('keydown', function(e) {
@@ -171,6 +240,9 @@
             conversation = [];
             userInput.value = '';
             userInput.focus();
+            // Reset confidence bar
+            confidenceBar.value = 0;
+            confidenceValue.innerText = `0%`;
         };
     </script>
 </body>
