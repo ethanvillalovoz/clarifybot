@@ -44,7 +44,8 @@ def submit_feedback():
     if len(conversation) >= 6:
         summary = reward_model.summarize_preferences(conversation, llm_model=llm_model)
 
-    return jsonify(questions=questions, summary=summary)
+    confidence = min(len(conversation) * 15, 100)  # Example logic
+    return jsonify(questions=questions, summary=summary, confidence=confidence)
 
 def run_gui():
     app.run(debug=True)

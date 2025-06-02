@@ -2,10 +2,26 @@
 <html>
 <head>
     <title>ClarifyBot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body { background: #f8f9fa; }
+        #chat-window, #input-row, #confidence-bar-container {
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        @media (max-width: 700px) {
+            #chat-window, #input-row, #confidence-bar-container {
+                max-width: 98vw;
+                padding: 8px;
+            }
+            #user-input { font-size: 1em; }
+        }
+        /* Add focus styles for accessibility */
+        #user-input:focus, #send-btn:focus, #clear-btn:focus, .edit-btn:focus {
+            outline: 2px solid #007bff;
+        }
         #chat-window {
-            max-width: 600px;
             margin: 40px auto 0 auto;
             border: 1px solid #e0e0e0;
             padding: 24px;
@@ -158,6 +174,9 @@
             if (isSummary) {
                 msgDiv.className = 'summary-msg';
                 label = '<strong>Summary</strong>';
+                if (text.length > 300) {
+                    text = text.slice(0, 300) + '...';
+                }
             } else if (sender === 'user') {
                 msgDiv.className = 'user-msg';
                 label = '<strong>You</strong>';
@@ -166,18 +185,33 @@
                 label = '<span class="icon">❓</span><strong>ClarifyBot</strong>';
             }
             if (!time) time = formatTime(new Date());
-            msgDiv.innerHTML = `${label}: <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
+
+            // Format clarification questions as a list if detected
+            if (sender === 'bot' && /^1\./.test(text.trim())) {
+                // Split multi-question string into lines
+                const questions = text.split(/\d+\.\s/).filter(Boolean);
+                msgDiv.innerHTML = `${label}:<ol style="margin:0 0 0 18px;padding:0;">` +
+                    questions.map(q => `<li style="margin-bottom:4px;">${q.trim()}</li>`).join('') +
+                    `</ol><span class="timestamp">${time}</span>`;
+            } else {
+                msgDiv.innerHTML = `${label}: <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
+            }
+
+            // Edit button logic (see below)
             // Add edit button to last user message
             if (sender === 'user') {
+                // Remove edit buttons from previous user messages
+                document.querySelectorAll('.edit-btn').forEach(btn => btn.remove());
+                // Add edit button to this message
                 const editBtn = document.createElement('button');
                 editBtn.className = 'edit-btn';
                 editBtn.innerHTML = '✏️ Edit';
                 editBtn.onclick = function() {
                     userInput.value = text;
                     userInput.focus();
-                    // Remove this message from chat and conversation
                     chatWindow.removeChild(msgDiv);
                     conversation = conversation.filter(m => !(m.sender === 'user' && m.text === text && m.time === time));
+                    updateConfidenceBar();
                 };
                 msgDiv.appendChild(editBtn);
             }
