@@ -17,7 +17,6 @@
             }
             #user-input { font-size: 1em; }
         }
-        /* Add focus styles for accessibility */
         #user-input:focus, #send-btn:focus, #clear-btn:focus, .edit-btn:focus {
             outline: 2px solid #007bff;
         }
@@ -143,11 +142,11 @@
     </style>
 </head>
 <body>
-    <button id="clear-btn">Clear Chat</button>
+    <button id="clear-btn" aria-label="Clear chat">Clear Chat</button>
     <div id="chat-window"></div>
     <div id="input-row">
-        <input type="text" id="user-input" placeholder="Type your feedback..." autocomplete="off" />
-        <button id="send-btn">Send</button>
+        <input type="text" id="user-input" placeholder="Type your feedback..." autocomplete="off" aria-label="Type your feedback" />
+        <button id="send-btn" aria-label="Send message">Send</button>
     </div>
     <div id="confidence-bar-container">
         <label for="confidence-bar">Alignment Confidence:</label>
@@ -187,9 +186,11 @@
             if (!time) time = formatTime(new Date());
 
             // Format clarification questions as a list if detected
-            if (sender === 'bot' && /^1\./.test(text.trim())) {
-                // Split multi-question string into lines
-                const questions = text.split(/\d+\.\s/).filter(Boolean);
+            if (sender === 'bot' && (
+                /^1\./.test(text.trim()) || text.split('\n').length > 1
+            )) {
+                // Split by numbered or newlines
+                const questions = text.split(/\d+\.\s|[\n\r]+/).filter(Boolean);
                 msgDiv.innerHTML = `${label}:<ol style="margin:0 0 0 18px;padding:0;">` +
                     questions.map(q => `<li style="margin-bottom:4px;">${q.trim()}</li>`).join('') +
                     `</ol><span class="timestamp">${time}</span>`;
@@ -197,15 +198,13 @@
                 msgDiv.innerHTML = `${label}: <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
             }
 
-            // Edit button logic (see below)
-            // Add edit button to last user message
+            // Only show edit button for the most recent user message
             if (sender === 'user') {
-                // Remove edit buttons from previous user messages
                 document.querySelectorAll('.edit-btn').forEach(btn => btn.remove());
-                // Add edit button to this message
                 const editBtn = document.createElement('button');
                 editBtn.className = 'edit-btn';
                 editBtn.innerHTML = '✏️ Edit';
+                editBtn.setAttribute('aria-label', 'Edit your last message');
                 editBtn.onclick = function() {
                     userInput.value = text;
                     userInput.focus();
@@ -224,8 +223,8 @@
         function updateConfidenceBar() {
             // Example: confidence increases with more conversation turns, maxing at 100%
             let val = Math.min(conversation.length * 15, 100);
-            document.getElementById('confidence-bar').value = val;
-            document.getElementById('confidence-value').textContent = val + '%';
+            confidenceBar.value = val;
+            confidenceValue.textContent = val + '%';
         }
 
         sendBtn.onclick = async function() {
