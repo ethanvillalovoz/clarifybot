@@ -69,6 +69,13 @@
             margin: 8px 0;
             max-width: 90%;
             font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+        .summary-msg .icon {
+            margin-right: 8px;
+            color: #ff9800;
+            font-size: 1.2em;
         }
         .timestamp {
             font-size: 0.8em;
@@ -143,7 +150,7 @@
 </head>
 <body>
     <button id="clear-btn" aria-label="Clear chat">Clear Chat</button>
-    <div id="chat-window"></div>
+    <div id="chat-window" role="log" aria-live="polite"></div>
     <div id="input-row">
         <input type="text" id="user-input" placeholder="Type your feedback..." autocomplete="off" aria-label="Type your feedback" />
         <button id="send-btn" aria-label="Send message">Send</button>
@@ -172,7 +179,7 @@
             let label = '';
             if (isSummary) {
                 msgDiv.className = 'summary-msg';
-                label = '<strong>Summary</strong>';
+                label = '<span class="icon">📝</span><strong>Summary</strong>';
                 if (text.length > 300) {
                     text = text.slice(0, 300) + '...';
                 }
@@ -191,9 +198,13 @@
             )) {
                 // Split by numbered or newlines
                 const questions = text.split(/\d+\.\s|[\n\r]+/).filter(Boolean);
-                msgDiv.innerHTML = `${label}:<ol style="margin:0 0 0 18px;padding:0;">` +
-                    questions.map(q => `<li style="margin-bottom:4px;">${q.trim()}</li>`).join('') +
-                    `</ol><span class="timestamp">${time}</span>`;
+                if (questions.length > 1) {
+                    msgDiv.innerHTML = `${label}:<ol style="margin:0 0 0 18px;padding:0;">` +
+                        questions.map(q => `<li style="margin-bottom:4px;">${q.trim()}</li>`).join('') +
+                        `</ol><span class="timestamp">${time}</span>`;
+                } else {
+                    msgDiv.innerHTML = `${label}: <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
+                }
             } else {
                 msgDiv.innerHTML = `${label}: <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
             }
