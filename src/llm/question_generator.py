@@ -12,41 +12,52 @@ class QuestionGenerator:
             self.tokenizer = None
             self.device = "cpu"
 
-    def generate_clarification_questions(self, ambiguous_feedback):
+    def generate_clarification_questions(self, feedback, conversation=None):
         """
-        Generate clarification questions based on ambiguous human feedback.
+        Generate clarification questions based on ambiguous human feedback and recent conversation context.
 
         Parameters:
-        ambiguous_feedback (str): The ambiguous feedback from the user.
+        feedback (str): The ambiguous feedback from the user.
+        conversation (list): List of dicts with 'sender' and 'text' keys (optional).
 
         Returns:
         list: A list of clarification questions to refine user preferences.
         """
+        context = ""
+        if conversation:
+            # Use the last 3 exchanges for context
+            context = "Recent conversation:\n" + "\n".join(
+                f"{msg['sender'].capitalize()}: {msg['text']}" for msg in conversation[-3:]
+            ) + "\n"
         if self.model and self.tokenizer:
             prompt = (
-                f"The user gave the following ambiguous feedback: '{ambiguous_feedback}'. "
-                "Generate 3 specific clarification questions to help understand their true preference, each on a new line."
+                "You are a helpful, empathetic assistant. "
+                "Given the following conversation and user feedback, generate 3 open-ended, non-repetitive, and actionable clarification questions. "
+                "Avoid yes/no questions, be supportive, and do not repeat yourself.\n"
+                f"{context}"
+                f"User feedback: \"{feedback}\"\n\n"
+                "Questions:\n"
+                "1."
             )
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
-                    max_new_tokens=100,
+                    max_new_tokens=120,
                     do_sample=True,
                     temperature=0.7,
                     pad_token_id=self.tokenizer.eos_token_id
                 )
             response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # Extract only the generated questions (after the prompt)
-            generated = response[len(prompt):].strip()
-            questions = [q.strip("- ").strip() for q in generated.split('\n') if q.strip()]
-            return questions[:3] if questions else [generated]
+            # Extract questions (split by numbers)
+            questions = [q.strip() for q in response.split('\n') if q.strip() and q.strip()[0].isdigit()]
+            return questions[:3]
         else:
             # Fallback placeholder logic
             questions = [
-                f"What do you mean by '{ambiguous_feedback}'?",
-                f"Can you clarify your preference regarding '{ambiguous_feedback}'?",
-                f"Could you provide more details about '{ambiguous_feedback}'?"
+                f"What do you mean by '{feedback}'?",
+                f"Can you clarify your preference regarding '{feedback}'?",
+                f"Could you provide more details about '{feedback}'?"
             ]
             return questions
 

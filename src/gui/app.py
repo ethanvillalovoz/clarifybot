@@ -39,7 +39,7 @@ def submit_feedback():
     conversation = data.get('conversation', [])
     feedback = data.get('feedback', '')
 
-    questions = question_generator.generate_clarification_questions(feedback)
+    questions = question_generator.generate_clarification_questions(feedback, conversation)
     summary = None
     if len(conversation) >= 6:
         summary = reward_model.summarize_preferences(conversation, llm_model=llm_model)
