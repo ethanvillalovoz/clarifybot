@@ -179,10 +179,11 @@
             let label = '';
             if (isSummary) {
                 msgDiv.className = 'summary-msg';
-                label = '<span class="icon">📝</span><strong>Summary</strong>';
+                label = '<span class="icon">📝</span><strong>Summary:</strong>';
                 if (text.length > 300) {
                     text = text.slice(0, 300) + '...';
                 }
+                msgDiv.innerHTML = `${label} <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
             } else if (sender === 'user') {
                 msgDiv.className = 'user-msg';
                 label = '<strong>You</strong>';
@@ -193,7 +194,7 @@
             if (!time) time = formatTime(new Date());
 
             // Format clarification questions as a list if detected
-            if (sender === 'bot' && (
+            if (!isSummary && sender === 'bot' && (
                 /^1\./.test(text.trim()) || text.split('\n').length > 1
             )) {
                 // Split by numbered or newlines
@@ -205,7 +206,7 @@
                 } else {
                     msgDiv.innerHTML = `${label}: <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
                 }
-            } else {
+            } else if (!isSummary) {
                 msgDiv.innerHTML = `${label}: <span class="msg-text">${text}</span> <span class="timestamp">${time}</span>`;
             }
 
