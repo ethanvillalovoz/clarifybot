@@ -111,13 +111,19 @@
 
         function appendMessage(text, sender, isSummary=false, time=null) {
             const msgDiv = document.createElement('div');
+            let label = '';
             if (isSummary) {
                 msgDiv.className = 'summary-msg';
+                label = '<strong>Summary</strong>';
+            } else if (sender === 'user') {
+                msgDiv.className = 'user-msg';
+                label = '<strong>You</strong>';
             } else {
-                msgDiv.className = sender === 'user' ? 'user-msg' : 'bot-msg';
+                msgDiv.className = 'bot-msg';
+                label = '<strong>ClarifyBot</strong>';
             }
             if (!time) time = formatTime(new Date());
-            msgDiv.innerHTML = `<span>${text}</span> <span class="timestamp">${time}</span>`;
+            msgDiv.innerHTML = `${label}: <span>${text}</span> <span class="timestamp">${time}</span>`;
             chatWindow.appendChild(msgDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
             if (!isSummary) conversation.push({sender, text, time});

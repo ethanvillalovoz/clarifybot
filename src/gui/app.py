@@ -42,7 +42,7 @@ def submit_feedback():
     questions = question_generator.generate_clarification_questions(feedback)
     summary = None
     if len(conversation) >= 6:
-        summary = reward_model.summarize_preferences(conversation)
+        summary = reward_model.summarize_preferences(conversation, llm_model=llm_model)
 
     return jsonify(questions=questions, summary=summary)
 
