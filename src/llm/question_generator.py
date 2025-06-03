@@ -30,9 +30,9 @@ class QuestionGenerator:
             self.device = "cpu"
 
     def generate_clarification_questions(self, feedback, conversation=None, language="English"):
-        """
-        Generate clarification questions based on ambiguous human feedback and recent conversation context.
-        """
+        idx, prompt_template = select_template()
+        prompt = prompt_template.format(feedback=feedback)
+
         context = ""
         if conversation:
             # Use the last 5 exchanges for more context
@@ -141,15 +141,14 @@ class QuestionGenerator:
             for q in filtered_questions:
                 if all(fuzz.ratio(q, bad_q) < 80 for bad_q in BAD_QUESTIONS):
                     final_questions.append(q)
-            return final_questions
+            return final_questions, idx
         else:
-            # Fallback placeholder logic
             questions = [
                 f"What do you mean by '{feedback}'?",
                 f"Can you clarify your preference regarding '{feedback}'?",
                 f"Could you provide more details about '{feedback}'?"
             ]
-            return questions
+            return questions, idx
 
     def refine_feedback(self, feedback):
         """
@@ -162,3 +161,32 @@ class QuestionGenerator:
         list: A list of refined questions based on the feedback.
         """
         return self.generate_clarification_questions(feedback)
+
+import random
+
+PROMPT_TEMPLATES = [
+    # Template 1
+    (
+        "You are a helpful, empathetic assistant. "
+        "Given the following conversation and user feedback, generate 3 open-ended, non-repetitive, and actionable clarification questions. "
+        "Reference specific details from the user's feedback and avoid generic or previously asked questions. "
+        "Each question should address a different aspect of the user's situation (for example: emotions, practical details, or future goals). "
+        "Avoid yes/no questions, be supportive, and do not repeat yourself or previous questions in this conversation.\n"
+        "User feedback: \"{feedback}\"\n\nQuestions:\n1."
+    ),
+    # Template 2
+    (
+        "Imagine you are supporting someone who just shared the following feedback. "
+        "Write 3 unique, open-ended questions to help them clarify their thoughts and feelings. "
+        "Be gentle, supportive, and specific. Reference details from their feedback and avoid generic questions.\n"
+        "User feedback: \"{feedback}\"\n\nQuestions:\n1."
+    )
+]
+TEMPLATE_REWARDS = [0.5 for _ in PROMPT_TEMPLATES]
+TEMPLATE_COUNTS = [1 for _ in PROMPT_TEMPLATES]
+
+def select_template():
+    total = sum(TEMPLATE_REWARDS)
+    probs = [r / total for r in TEMPLATE_REWARDS]
+    idx = random.choices(range(len(PROMPT_TEMPLATES)), weights=probs)[0]
+    return idx, PROMPT_TEMPLATES[idx]

@@ -174,6 +174,11 @@
     <div id="misalignment-warning" style="display:none;color:#b30000;background:#fff3cd;border:1px solid #ffeeba;padding:12px 16px;margin:16px 0;font-weight:bold;border-radius:8px;">
         ⚠️ The system is unsure about your preferences. Please clarify your feedback or provide more details to help us assist you better.
     </div>
+    <div style="max-width:600px;margin:24px auto;">
+        <h3 style="margin-bottom:8px;">Template Rewards</h3>
+        <canvas id="templateChart" width="600" height="200"></canvas>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const chatWindow = document.getElementById('chat-window');
         const userInput = document.getElementById('user-input');
@@ -184,6 +189,8 @@
         const langSelect = document.getElementById('lang-select');
         let conversation = [];
         let typingDiv = null;
+        let templateChart = null;
+        let botTemplateIndexes = [];
 
         function formatTime(date) {
             return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -317,6 +324,18 @@
             } else {
                 warningDiv.style.display = 'none';
             }
+
+            if (data.template_rewards && data.template_counts) {
+                updateTemplateChart(data.template_rewards, data.template_counts);
+            }
+
+            // Store the template index for the latest batch of questions
+            if (data.template_idx !== undefined) {
+                // If you always get 3 questions per batch:
+                for (let i = 0; i < data.questions.length; i++) {
+                    botTemplateIndexes.push(data.template_idx);
+                }
+            }
         };
 
         userInput.addEventListener('keydown', function(e) {
@@ -334,10 +353,17 @@
         };
 
         function rateQuestion(question, rating) {
+            // Find the index of this question in the chat (assumes 1:1 order)
+            const botMsgIndex = Array.from(document.querySelectorAll('.bot-msg .msg-text'))
+                .findIndex(span => span.textContent === question);
+
+            // Get the template index for this question
+            const template_idx = botTemplateIndexes[botMsgIndex];
+
             fetch('/rate_question', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({question, rating})
+                body: JSON.stringify({question, rating, template_idx})
             });
         }
 
@@ -346,6 +372,32 @@
             thanks.textContent = ' Thank you for your feedback!';
             thanks.style.color = '#28a745';
             btn.parentNode.appendChild(thanks);
+        }
+
+        function updateTemplateChart(rewards, counts) {
+            const ctx = document.getElementById('templateChart').getContext('2d');
+            const labels = rewards.map((_, i) => `Template ${i+1}`);
+            if (!templateChart) {
+                templateChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Average Reward',
+                            data: rewards,
+                            backgroundColor: '#007bff88'
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: { min: 0, max: 1 }
+                        }
+                    }
+                });
+            } else {
+                templateChart.data.datasets[0].data = rewards;
+                templateChart.update();
+            }
         }
     </script>
 </body>

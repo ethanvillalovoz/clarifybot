@@ -34,25 +34,23 @@ class RewardModel:
         if "Summary:" in summary:
             summary = summary.split("Summary:")[-1].strip()
         return summary
-    
-    # def __init__(self):
-    #     # Initialize parameters for the reward model
-    #     self.reward_function = None
 
-    # def infer_reward(self, feedback):
-    #     # Process the human feedback to infer a reward function
-    #     # This is a placeholder for the actual implementation
-    #     # Inverse reinforcement learning logic would go here
-    #     pass
+    def infer_reward(self, feedback):
+        """
+        Infer a reward value from a list of feedback (e.g., [1, 0, 1]).
+        Returns the mean of the feedback as the reward.
+        Raises ValueError if feedback is empty.
+        """
+        if not feedback:
+            raise ValueError("Feedback cannot be empty.")
+        return round(sum(feedback) / len(feedback), 2)
 
+    # Placeholder for future reward function updates
     # def update_reward_function(self, new_feedback):
-    #     # Update the reward function based on new human feedback
-    #     # This is a placeholder for the actual implementation
     #     pass
 
+    # Placeholder for evaluating the reward function for a given state
     # def evaluate(self, state):
-    #     # Evaluate the reward function for a given state
-    #     # This is a placeholder for the actual implementation
     #     return 0  # Default reward value
 
 # Additional utility functions for reward modeling can be added here
