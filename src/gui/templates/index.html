@@ -160,6 +160,15 @@
         <progress id="confidence-bar" value="0" max="100"></progress>
         <span id="confidence-value">0%</span>
     </div>
+    <div id="lang-row" style="max-width:600px;margin:0 auto 8px auto;">
+        <label for="lang-select">Language:</label>
+        <select id="lang-select">
+            <option value="English">English</option>
+            <option value="Spanish">Spanish</option>
+            <option value="French">French</option>
+            <!-- Add more as needed -->
+        </select>
+    </div>
     <script>
         const chatWindow = document.getElementById('chat-window');
         const userInput = document.getElementById('user-input');
@@ -167,6 +176,7 @@
         const clearBtn = document.getElementById('clear-btn');
         const confidenceBar = document.getElementById('confidence-bar');
         const confidenceValue = document.getElementById('confidence-value');
+        const langSelect = document.getElementById('lang-select');
         let conversation = [];
         let typingDiv = null;
 
@@ -225,6 +235,33 @@
                     updateConfidenceBar();
                 };
                 msgDiv.appendChild(editBtn);
+            } else if (sender === 'bot' && !isSummary) {
+                const feedbackDiv = document.createElement('span');
+                feedbackDiv.style.marginLeft = '10px';
+
+                const upBtn = document.createElement('button');
+                upBtn.innerHTML = '👍';
+                upBtn.className = 'feedback-btn';
+                upBtn.onclick = function() {
+                    rateQuestion(text, 'up');
+                    upBtn.disabled = true;
+                    downBtn.disabled = true;
+                    showFeedbackThanks(upBtn);
+                };
+
+                const downBtn = document.createElement('button');
+                downBtn.innerHTML = '👎';
+                downBtn.className = 'feedback-btn';
+                downBtn.onclick = function() {
+                    rateQuestion(text, 'down');
+                    upBtn.disabled = true;
+                    downBtn.disabled = true;
+                    showFeedbackThanks(downBtn);
+                };
+
+                feedbackDiv.appendChild(upBtn);
+                feedbackDiv.appendChild(downBtn);
+                msgDiv.appendChild(feedbackDiv);
             }
             chatWindow.appendChild(msgDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -241,6 +278,7 @@
 
         sendBtn.onclick = async function() {
             const feedback = userInput.value.trim();
+            const language = langSelect.value;
             if (!feedback) return;
             appendMessage(feedback, 'user');
             userInput.value = '';
@@ -256,7 +294,7 @@
             const response = await fetch('/submit_feedback', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({feedback, conversation})
+                body: JSON.stringify({feedback, conversation, language})
             });
             const data = await response.json();
 
@@ -289,6 +327,21 @@
             confidenceBar.value = 0;
             confidenceValue.innerText = `0%`;
         };
+
+        function rateQuestion(question, rating) {
+            fetch('/rate_question', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({question, rating})
+            });
+        }
+
+        function showFeedbackThanks(btn) {
+            const thanks = document.createElement('span');
+            thanks.textContent = ' Thank you for your feedback!';
+            thanks.style.color = '#28a745';
+            btn.parentNode.appendChild(thanks);
+        }
     </script>
 </body>
 </html>

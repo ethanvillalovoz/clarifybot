@@ -33,12 +33,22 @@ class QuestionGenerator:
             ) + "\n"
         if self.model and self.tokenizer:
             # Example priming
-            example_block = (
-                "Example questions:\n"
-                "1. Can you tell me more about what led you to feel this way?\n"
-                "2. What would help you feel better in this situation?\n"
-                "3. Are there specific goals or changes you'd like to work towards?\n"
-            )
+            example_blocks = [
+                "",
+                (
+                    "Example questions:\n"
+                    "1. What has been weighing on your mind lately?\n"
+                    "2. Is there something specific you wish would change?\n"
+                    "3. What would make you feel more supported right now?\n"
+                ),
+                (
+                    "Example questions:\n"
+                    "1. Can you describe a recent moment that made you feel this way?\n"
+                    "2. What are some things that usually help you cope?\n"
+                    "3. Are there any goals or dreams you want to pursue?\n"
+                )
+            ]
+            example_block = random.choice(example_blocks)
 
             prompt_templates = [
                 (
