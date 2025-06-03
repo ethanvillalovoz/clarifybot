@@ -1,6 +1,6 @@
 # ClarifyBot: An LLM-Guided Clarification System for Ambiguous Reward Preferences
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yourusername/clarifybot/blob/main/notebooks/demo.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ethanvillalovoz/clarifybot/blob/main/notebooks/demo.ipynb)
 
 ## Overview
 ClarifyBot is an interactive system that demonstrates how autonomous agents can learn from imperfect human feedback by refining reward inference through clarification questions. Leveraging large language models (LLMs) and a simple reinforcement learning (RL) loop, ClarifyBot adaptively selects question-generation strategies based on user feedback, making the agent more aligned with human expectations.
