@@ -8,6 +8,14 @@ The project consists of several key components:
 - **Question Generation**: Leveraging an LLM, the system generates relevant clarification questions based on the ambiguous feedback received, facilitating a more interactive and informative dialogue with users.
 - **Graphical User Interface**: The user-friendly GUI allows users to easily interact with the system, providing feedback and receiving clarification questions in real-time.
 
+## Recent Improvements
+
+- **Implemented `infer_reward` Method**: Added the `infer_reward` method to the [`RewardModel`](src/rl/reward_model.py) to properly infer reward values from user feedback, ensuring all reward model tests pass.
+- **Requirements Update**: Updated `requirements.txt` to include all necessary dependencies, such as `rapidfuzz`, to ensure smooth installation and execution.
+- **Testing and Validation**: Ran and passed all unit tests for both the reward model and question generator, confirming the correctness of the core logic.
+- **Codebase Cleanup**: Reverted unnecessary changes, removed unused code, and improved consistency across modules.
+- **Documentation**: Updated documentation and code comments to reflect the latest changes and clarify usage for future contributors.
+
 ## Why It Matters
 As autonomous systems become more integrated into our daily lives, ensuring that these systems understand and align with human expectations is crucial. Traditional methods of learning from human feedback often treat users as perfect oracles, which is far from reality. ClarifyBot addresses this gap by acknowledging the imperfections and nuances of human feedback. By generating clarification questions, the system not only improves the quality of the data it learns from but also fosters a more collaborative relationship between humans and machines.
 
@@ -18,5 +26,6 @@ Throughout the development of ClarifyBot, I gained valuable insights into severa
 - **Human Feedback Complexity**: I learned that human feedback is often noisy and context-dependent, which necessitates a more sophisticated approach to understanding user preferences.
 - **LLM Capabilities**: Working with large language models revealed their potential for generating meaningful and contextually relevant questions, enhancing the interaction between users and autonomous systems.
 - **Reward Inference Techniques**: I deepened my understanding of reward modeling and inverse reinforcement learning, which are essential for aligning autonomous behavior with human objectives.
+- **Importance of Testing and Dependency Management**: Ensuring all dependencies are tracked and all tests pass is crucial for maintainability and collaboration.
 
 Overall, this project has not only strengthened my technical skills in machine learning and human-in-the-loop modeling but has also reinforced my commitment to developing autonomous systems that prioritize human alignment and safety.
