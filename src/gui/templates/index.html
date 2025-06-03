@@ -171,6 +171,9 @@
             <!-- Add more as needed -->
         </select>
     </div>
+    <div id="misalignment-warning" style="display:none;color:#b30000;background:#fff3cd;border:1px solid #ffeeba;padding:12px 16px;margin:16px 0;font-weight:bold;border-radius:8px;">
+        ⚠️ The system is unsure about your preferences. Please clarify your feedback or provide more details to help us assist you better.
+    </div>
     <script>
         const chatWindow = document.getElementById('chat-window');
         const userInput = document.getElementById('user-input');
@@ -268,14 +271,7 @@
             chatWindow.appendChild(msgDiv);
             chatWindow.scrollTop = chatWindow.scrollHeight;
             if (!isSummary) conversation.push({sender, text, time});
-            updateConfidenceBar();
-        }
-
-        function updateConfidenceBar() {
-            // Example: confidence increases with more conversation turns, maxing at 100%
-            let val = Math.min(conversation.length * 15, 100);
-            confidenceBar.value = val;
-            confidenceValue.textContent = val + '%';
+            // updateConfidenceBar(); // Removed as per suggestion
         }
 
         sendBtn.onclick = async function() {
@@ -312,8 +308,15 @@
             }
             // Update confidence bar
             confidenceBar.value = data.confidence || 0;
-            confidenceValue.innerText = `${Math.round(confidenceBar.value)}%`;
-            updateConfidenceBar();
+            confidenceValue.innerText = `${Math.round(data.confidence || 0)}%`;
+
+            // Show or hide misalignment warning
+            const warningDiv = document.getElementById('misalignment-warning');
+            if (data.misalignment) {
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
+            }
         };
 
         userInput.addEventListener('keydown', function(e) {

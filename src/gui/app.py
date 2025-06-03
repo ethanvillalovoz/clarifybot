@@ -5,6 +5,8 @@ from rl.reward_model import RewardModel
 # Add these imports
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+import numpy as np
+from difflib import SequenceMatcher
 
 # Device selection: CUDA > MPS > CPU
 if torch.cuda.is_available():
@@ -44,8 +46,21 @@ def submit_feedback():
     if len(conversation) >= 6:
         summary = reward_model.summarize_preferences(conversation, llm_model=llm_model)
 
-    confidence = min(len(conversation) * 15, 100)  # Example logic
-    return jsonify(questions=questions, summary=summary, confidence=confidence)
+    # --- New uncertainty/misalignment logic ---
+    uncertainty = compute_uncertainty(questions)
+    confidence = round((1 - uncertainty) * 100)
+    misalignment_flag = confidence < 20  # Only warn if confidence is below 60%
+
+    if misalignment_flag:
+        with open("misalignment_events.log", "a") as f:
+            f.write(f"UNCERTAIN: {uncertainty:.2f}\t{feedback}\t{questions}\n")
+
+    return jsonify(
+        questions=questions,
+        summary=summary,
+        confidence=confidence,
+        misalignment=bool(misalignment_flag)  # <-- Make sure this is a Python bool
+    )
 
 @app.route('/rate_question', methods=['POST'])
 def rate_question():
@@ -56,6 +71,25 @@ def rate_question():
     with open("question_ratings.log", "a") as f:
         f.write(f"{question}\t{rating}\n")
     return jsonify(success=True)
+
+def compute_uncertainty(questions):
+    """
+    Simple uncertainty metric: higher if questions are more diverse.
+    """
+    if not questions or len(questions) == 1:
+        return 0  # Low uncertainty if only one question
+
+    def similarity(a, b):
+        return SequenceMatcher(None, a, b).ratio()
+
+    similarities = []
+    for i in range(len(questions)):
+        for j in range(i + 1, len(questions)):
+            similarities.append(similarity(questions[i], questions[j]))
+
+    avg_similarity = np.mean(similarities) if similarities else 1.0
+    uncertainty = 1 - avg_similarity  # Higher = more diverse = more uncertain
+    return uncertainty
 
 def run_gui():
     app.run(debug=True)
