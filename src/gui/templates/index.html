@@ -179,6 +179,7 @@
         <canvas id="templateChart" width="600" height="200"></canvas>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-error-bars@4.0.1/build/index.umd.min.js"></script>
     <script>
         const chatWindow = document.getElementById('chat-window');
         const userInput = document.getElementById('user-input');
@@ -328,6 +329,9 @@
             if (data.template_rewards && data.template_counts) {
                 updateTemplateChart(data.template_rewards, data.template_counts);
             }
+            if (data.template_means && data.template_stds) {
+                updateTemplateChart(data.template_means, data.template_stds);
+            }
 
             // Store the template index for the latest batch of questions
             if (data.template_idx !== undefined) {
@@ -374,28 +378,40 @@
             btn.parentNode.appendChild(thanks);
         }
 
-        function updateTemplateChart(rewards, counts) {
+        function updateTemplateChart(means, stds) {
             const ctx = document.getElementById('templateChart').getContext('2d');
-            const labels = rewards.map((_, i) => `Template ${i+1}`);
+            const labels = means.map((_, i) => `Template ${i+1}`);
+            const errorData = means.map((mean, i) => ({
+                y: mean,
+                yMin: Math.max(mean - stds[i], 0),
+                yMax: Math.min(mean + stds[i], 1)
+            }));
+
             if (!templateChart) {
                 templateChart = new Chart(ctx, {
-                    type: 'bar',
+                    type: 'barWithErrorBars',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Average Reward',
-                            data: rewards,
-                            backgroundColor: '#007bff88'
+                            label: 'Posterior Mean Reward',
+                            data: errorData,
+                            backgroundColor: '#007bff88',
+                            errorBarWhiskerColor: '#222',
+                            errorBarLineWidth: 2
                         }]
                     },
                     options: {
+                        plugins: {
+                            legend: { display: true }
+                        },
                         scales: {
-                            y: { min: 0, max: 1 }
+                            y: { min: 0, max: 1, title: { display: true, text: 'Posterior Mean Reward' } }
                         }
                     }
                 });
             } else {
-                templateChart.data.datasets[0].data = rewards;
+                templateChart.data.labels = labels;
+                templateChart.data.datasets[0].data = errorData;
                 templateChart.update();
             }
         }

@@ -3,6 +3,42 @@ import torch
 from rapidfuzz import fuzz
 import random
 
+PROMPT_TEMPLATES = [
+    (
+        "You are a helpful, empathetic assistant. "
+        "Given the following conversation and user feedback, generate 3 open-ended, non-repetitive, and actionable clarification questions. "
+        "Reference specific details from the user's feedback and avoid generic or previously asked questions. "
+        "Each question should address a different aspect of the user's situation (for example: emotions, practical details, or future goals). "
+        "Avoid yes/no questions, be supportive, and do not repeat yourself or previous questions in this conversation.\n"
+        "User feedback: \"{feedback}\"\n\nQuestions:\n1."
+    ),
+    (
+        "Imagine you are supporting someone who just shared the following feedback. "
+        "Write 3 unique, open-ended questions to help them clarify their thoughts and feelings. "
+        "Be gentle, supportive, and specific. Reference details from their feedback and avoid generic questions.\n"
+        "User feedback: \"{feedback}\"\n\nQuestions:\n1."
+    )
+]
+
+EPSILON = 0.1  # Exploration rate (10%)
+
+def select_template(reward_model):
+    """
+    Epsilon-greedy selection for prompt templates using Bayesian mean.
+    With probability EPSILON, select a random template (exploration).
+    Otherwise, select the template with the highest posterior mean (exploitation).
+    """
+    if random.random() < EPSILON:
+        idx = random.randint(0, len(PROMPT_TEMPLATES) - 1)
+        mode = "explore"
+    else:
+        means = [reward_model.posterior_mean(i) for i in range(len(PROMPT_TEMPLATES))]
+        max_mean = max(means)
+        best_idxs = [i for i, m in enumerate(means) if m == max_mean]
+        idx = random.choice(best_idxs)
+        mode = "exploit"
+    return idx, PROMPT_TEMPLATES[idx], mode
+
 def load_bad_questions(log_path="question_ratings.log", threshold=3):
     from collections import Counter
     counter = Counter()
@@ -19,7 +55,7 @@ def load_bad_questions(log_path="question_ratings.log", threshold=3):
 BAD_QUESTIONS = load_bad_questions()
 
 class QuestionGenerator:
-    def __init__(self, llm_model=None):
+    def __init__(self, llm_model=None, reward_model=None):
         if llm_model is not None:
             self.model = llm_model["model"]
             self.tokenizer = llm_model["tokenizer"]
@@ -28,9 +64,10 @@ class QuestionGenerator:
             self.model = None
             self.tokenizer = None
             self.device = "cpu"
+        self.reward_model = reward_model
 
     def generate_clarification_questions(self, feedback, conversation=None, language="English"):
-        idx, prompt_template = select_template()
+        idx, prompt_template, mode = select_template(self.reward_model)
         prompt = prompt_template.format(feedback=feedback)
 
         context = ""
@@ -141,52 +178,14 @@ class QuestionGenerator:
             for q in filtered_questions:
                 if all(fuzz.ratio(q, bad_q) < 80 for bad_q in BAD_QUESTIONS):
                     final_questions.append(q)
-            return final_questions, idx
+            return final_questions, idx, mode
         else:
             questions = [
                 f"What do you mean by '{feedback}'?",
                 f"Can you clarify your preference regarding '{feedback}'?",
                 f"Could you provide more details about '{feedback}'?"
             ]
-            return questions, idx
+            return questions, idx, mode
 
     def refine_feedback(self, feedback):
-        """
-        Refine the feedback by generating questions and returning them.
-
-        Parameters:
-        feedback (str): The initial ambiguous feedback.
-
-        Returns:
-        list: A list of refined questions based on the feedback.
-        """
         return self.generate_clarification_questions(feedback)
-
-import random
-
-PROMPT_TEMPLATES = [
-    # Template 1
-    (
-        "You are a helpful, empathetic assistant. "
-        "Given the following conversation and user feedback, generate 3 open-ended, non-repetitive, and actionable clarification questions. "
-        "Reference specific details from the user's feedback and avoid generic or previously asked questions. "
-        "Each question should address a different aspect of the user's situation (for example: emotions, practical details, or future goals). "
-        "Avoid yes/no questions, be supportive, and do not repeat yourself or previous questions in this conversation.\n"
-        "User feedback: \"{feedback}\"\n\nQuestions:\n1."
-    ),
-    # Template 2
-    (
-        "Imagine you are supporting someone who just shared the following feedback. "
-        "Write 3 unique, open-ended questions to help them clarify their thoughts and feelings. "
-        "Be gentle, supportive, and specific. Reference details from their feedback and avoid generic questions.\n"
-        "User feedback: \"{feedback}\"\n\nQuestions:\n1."
-    )
-]
-TEMPLATE_REWARDS = [0.5 for _ in PROMPT_TEMPLATES]
-TEMPLATE_COUNTS = [1 for _ in PROMPT_TEMPLATES]
-
-def select_template():
-    total = sum(TEMPLATE_REWARDS)
-    probs = [r / total for r in TEMPLATE_REWARDS]
-    idx = random.choices(range(len(PROMPT_TEMPLATES)), weights=probs)[0]
-    return idx, PROMPT_TEMPLATES[idx]
