@@ -20,24 +20,23 @@ PROMPT_TEMPLATES = [
     )
 ]
 
-EPSILON = 0.1  # Exploration rate (10%)
+EPSILON = 0.1  # 10% exploration
 
-def select_template(reward_model):
+def select_template(reward_model, prompt_templates, epsilon=0.1):
     """
-    Epsilon-greedy selection for prompt templates using Bayesian mean.
-    With probability EPSILON, select a random template (exploration).
-    Otherwise, select the template with the highest posterior mean (exploitation).
+    Epsilon-greedy selection for prompt templates using RewardModel.
     """
-    if random.random() < EPSILON:
-        idx = random.randint(0, len(PROMPT_TEMPLATES) - 1)
+    import random
+    if random.random() < epsilon:
+        idx = random.randint(0, len(prompt_templates) - 1)
         mode = "explore"
     else:
-        means = [reward_model.posterior_mean(i) for i in range(len(PROMPT_TEMPLATES))]
+        means = [reward_model.posterior_mean(i) for i in range(len(prompt_templates))]
         max_mean = max(means)
         best_idxs = [i for i, m in enumerate(means) if m == max_mean]
         idx = random.choice(best_idxs)
         mode = "exploit"
-    return idx, PROMPT_TEMPLATES[idx], mode
+    return idx, prompt_templates[idx], mode
 
 def load_bad_questions(log_path="question_ratings.log", threshold=3):
     from collections import Counter
@@ -67,8 +66,8 @@ class QuestionGenerator:
         self.reward_model = reward_model
 
     def generate_clarification_questions(self, feedback, conversation=None, language="English"):
-        idx, prompt_template, mode = select_template(self.reward_model)
-        prompt = prompt_template.format(feedback=feedback)
+        idx, prompt_template, mode = select_template(self.reward_model, PROMPT_TEMPLATES)
+        prompt = f"Please respond in {language}.\n" + prompt_template.format(feedback=feedback)
 
         context = ""
         if conversation:
@@ -125,7 +124,6 @@ class QuestionGenerator:
             )
         ]
         prompt = random.choice(prompt_templates)
-        prompt = f"Please respond in {language}.\n" + prompt
 
         if self.model and self.tokenizer:
             inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -178,6 +176,8 @@ class QuestionGenerator:
             for q in filtered_questions:
                 if all(fuzz.ratio(q, bad_q) < 80 for bad_q in BAD_QUESTIONS):
                     final_questions.append(q)
+            with open("template_selection.log", "a") as f:
+                f.write(f"{idx}\t{mode}\n")
             return final_questions, idx, mode
         else:
             questions = [
