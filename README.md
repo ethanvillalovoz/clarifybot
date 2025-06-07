@@ -69,13 +69,6 @@ Once running, open the GUI in your browser to interact with the system, provide 
 
 Refer to the [`notebooks/demo.ipynb`](notebooks/demo.ipynb) for a detailed demonstration of how ClarifyBot processes feedback, generates clarification questions, and adapts its strategy based on user ratings. The notebook also includes analytics and visualizations for both simulated and real user data.
 
-## Testing
-
-Unit tests are provided for reward modeling and question generation. To run the tests:
-```bash
-pytest tests/
-```
-
 ## Contribution
 
 Contributions are welcome! Please submit a pull request or open an issue for suggestions or improvements.
