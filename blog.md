@@ -7,14 +7,16 @@ The project consists of several key components:
 - **Reward Modeling Pipeline**: This component infers reward functions from human feedback, utilizing techniques such as inverse reinforcement learning to better understand user objectives.
 - **Question Generation**: Leveraging an LLM, the system generates relevant clarification questions based on the ambiguous feedback received, facilitating a more interactive and informative dialogue with users.
 - **Graphical User Interface**: The user-friendly GUI allows users to easily interact with the system, providing feedback and receiving clarification questions in real-time.
+- **Live Analytics Notebook**: A Jupyter notebook enables real-time analysis and visualization of both simulated and real user feedback, supporting research and debugging.
 
 ## Recent Improvements
 
-- **Implemented `infer_reward` Method**: Added the `infer_reward` method to the [`RewardModel`](src/rl/reward_model.py) to properly infer reward values from user feedback, ensuring all reward model tests pass.
-- **Requirements Update**: Updated `requirements.txt` to include all necessary dependencies, such as `rapidfuzz`, to ensure smooth installation and execution.
-- **Testing and Validation**: Ran and passed all unit tests for both the reward model and question generator, confirming the correctness of the core logic.
-- **Codebase Cleanup**: Reverted unnecessary changes, removed unused code, and improved consistency across modules.
-- **Documentation**: Updated documentation and code comments to reflect the latest changes and clarify usage for future contributors.
+- **Robust Repeated Info Detection**: Refined the repeated information detection logic to prevent false positives, ensuring users are not incorrectly told they are repeating themselves. This greatly improved the user experience and allowed the RL loop to function as intended.
+- **Consistent Logging for Analytics**: Standardized the logging format for all user interactions, guaranteeing that every event (template selection, mode, reward, timestamp) is recorded in a way that supports seamless analytics in the Jupyter notebook.
+- **UI and Notebook Integration**: Achieved smooth integration between the web UI and the analytics notebook, so that real user interactions are immediately available for analysis and visualization.
+- **Live Analytics and Visualization**: Fixed issues with blank or broken plots in the notebook by ensuring the log file is always in the expected format and by adding robust error handling in the analytics code.
+- **Testing and Debugging**: Improved the debugging process by adding diagnostics to both the backend and the notebook, making it easier to trace issues with logging or repeated info detection.
+- **User Experience Fixes**: Addressed issues where users were incorrectly told they were repeating themselves, resulting in a smoother and more engaging interaction.
 
 ## Why It Matters
 As autonomous systems become more integrated into our daily lives, ensuring that these systems understand and align with human expectations is crucial. Traditional methods of learning from human feedback often treat users as perfect oracles, which is far from reality. ClarifyBot addresses this gap by acknowledging the imperfections and nuances of human feedback. By generating clarification questions, the system not only improves the quality of the data it learns from but also fosters a more collaborative relationship between humans and machines.
@@ -27,5 +29,6 @@ Throughout the development of ClarifyBot, I gained valuable insights into severa
 - **LLM Capabilities**: Working with large language models revealed their potential for generating meaningful and contextually relevant questions, enhancing the interaction between users and autonomous systems.
 - **Reward Inference Techniques**: I deepened my understanding of reward modeling and inverse reinforcement learning, which are essential for aligning autonomous behavior with human objectives.
 - **Importance of Testing and Dependency Management**: Ensuring all dependencies are tracked and all tests pass is crucial for maintainability and collaboration.
+- **Iterative Debugging and Integration**: Real-world systems require iterative debugging and refinement, especially when integrating multiple components (UI, backend, analytics). Consistent, well-structured logging is crucial for reliable analytics and visualization.
 
 Overall, this project has not only strengthened my technical skills in machine learning and human-in-the-loop modeling but has also reinforced my commitment to developing autonomous systems that prioritize human alignment and safety.
