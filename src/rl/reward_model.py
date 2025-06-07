@@ -2,24 +2,25 @@ import torch
 
 class RewardModel:
     def __init__(self, num_templates=2):
-        # Bayesian reward model for each template
-        self.alpha = [1 for _ in range(num_templates)]  # Prior successes (thumbs up)
-        self.beta = [1 for _ in range(num_templates)]   # Prior failures (thumbs down)
+        self.sums = [0.0 for _ in range(num_templates)]
+        self.counts = [0 for _ in range(num_templates)]
+        self.sq_sums = [0.0 for _ in range(num_templates)]  # For std
 
-    def update(self, template_idx, user_reward):
-        """Update the Beta posterior for the template given binary feedback."""
-        if user_reward == 1:
-            self.alpha[template_idx] += 1
-        else:
-            self.beta[template_idx] += 1
+    def update(self, idx, reward):
+        self.sums[idx] += reward
+        self.sq_sums[idx] += reward ** 2
+        self.counts[idx] += 1
 
     def posterior_mean(self, idx):
-        return self.alpha[idx] / (self.alpha[idx] + self.beta[idx])
+        return self.sums[idx] / self.counts[idx] if self.counts[idx] > 0 else 0.0
 
     def posterior_std(self, idx):
-        a, b = self.alpha[idx], self.beta[idx]
-        denom = (a + b) ** 2 * (a + b + 1)
-        return (a * b / denom) ** 0.5 if denom > 0 else 0
+        if self.counts[idx] > 1:
+            mean = self.posterior_mean(idx)
+            variance = (self.sq_sums[idx] / self.counts[idx]) - mean ** 2
+            return max(variance, 0) ** 0.5
+        else:
+            return 0.0
 
     def summarize_preferences(self, conversation, llm_model=None):
         """

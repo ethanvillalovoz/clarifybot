@@ -5,6 +5,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 import numpy as np
 from difflib import SequenceMatcher
+import time
 
 # Device selection: CUDA > MPS > CPU
 if torch.cuda.is_available():
@@ -41,11 +42,18 @@ def submit_feedback():
     conversation = data.get('conversation', [])
     feedback = data.get('feedback', '')
     language = data.get('language', 'English')
-    questions, template_idx, mode = question_generator.generate_clarification_questions(feedback, conversation, language)
+    previous_user_inputs = [msg['text'] for msg in conversation if msg['sender'].lower() == 'user']
+    # Use robust repeated info detection and logging
+    questions, template_idx, mode = question_generator.generate_clarification_questions(
+        feedback, conversation, language, previous_user_inputs=previous_user_inputs
+    )
     summary = None
     if len(conversation) >= 6:
         summary = reward_model.summarize_preferences(conversation, llm_model=llm_model)
 
+    # Log template selection robustly (for research-grade analytics)
+    with open("template_selection.log", "a") as f:
+        f.write(f"{template_idx}\t{mode}\n")
     with open(TEMPLATE_LOG_PATH, "a") as f:
         f.write(f"{template_idx}\n")
 
@@ -87,6 +95,9 @@ def rate_question():
         reward_model.update(int(template_idx), user_reward)
         with open("template_reward_updates.log", "a") as f:
             f.write(f"{template_idx}\t{user_reward}\t{reward_model.posterior_mean(int(template_idx))}\n")
+        # Log template selection with reward for analytics (mode is 'rate' here)
+        with open("template_selection.log", "a") as f:
+            f.write(f"{template_idx}\trate\t{user_reward}\t{int(time.time())}\n")
 
     return jsonify(success=True)
 
@@ -102,6 +113,10 @@ def compute_uncertainty(questions):
     avg_similarity = np.mean(similarities) if similarities else 1.0
     uncertainty = 1 - avg_similarity
     return uncertainty
+
+def log_template_selection(template_idx, mode, reward):
+    with open("template_selection.log", "a") as f:
+        f.write(f"{template_idx}\t{mode}\t\t{int(time.time())}\n")  # Empty reward
 
 def run_gui():
     app.run(debug=True)

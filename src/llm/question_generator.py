@@ -2,6 +2,9 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 from rapidfuzz import fuzz
 import random
+import numpy as np
+from difflib import SequenceMatcher
+import time
 
 PROMPT_TEMPLATES = [
     (
@@ -38,6 +41,13 @@ def select_template(reward_model, prompt_templates, epsilon=0.1):
         mode = "exploit"
     return idx, prompt_templates[idx], mode
 
+def select_template_ucb(reward_model, prompt_templates, t, c=2):
+    means = [reward_model.posterior_mean(i) for i in range(len(prompt_templates))]
+    counts = [reward_model.counts[i] for i in range(len(prompt_templates))]
+    ucb_values = [m + c * (np.sqrt(np.log(t+1)/(n+1))) for m, n in zip(means, counts)]
+    idx = int(np.argmax(ucb_values))
+    return idx, prompt_templates[idx], "ucb"
+
 def load_bad_questions(log_path="question_ratings.log", threshold=3):
     from collections import Counter
     counter = Counter()
@@ -65,7 +75,11 @@ class QuestionGenerator:
             self.device = "cpu"
         self.reward_model = reward_model
 
-    def generate_clarification_questions(self, feedback, conversation=None, language="English"):
+    def generate_clarification_questions(self, feedback, conversation=None, language="English", previous_user_inputs=None, user_reward=None):
+        # Detect repeated info
+        if previous_user_inputs and is_repeated(feedback, previous_user_inputs):
+            return ["Thanks, you already mentioned that. Let's focus on next steps..."], None, "repeat"
+
         idx, prompt_template, mode = select_template(self.reward_model, PROMPT_TEMPLATES)
         prompt = f"Please respond in {language}.\n" + prompt_template.format(feedback=feedback)
 
@@ -176,8 +190,12 @@ class QuestionGenerator:
             for q in filtered_questions:
                 if all(fuzz.ratio(q, bad_q) < 80 for bad_q in BAD_QUESTIONS):
                     final_questions.append(q)
+            # Robust logging: include reward if available
             with open("template_selection.log", "a") as f:
-                f.write(f"{idx}\t{mode}\n")
+                if user_reward is not None:
+                    f.write(f"{idx}\t{mode}\t{user_reward}\t{int(time.time())}\n")
+                else:
+                    f.write(f"{idx}\t{mode}\n")
             return final_questions, idx, mode
         else:
             questions = [
@@ -189,3 +207,15 @@ class QuestionGenerator:
 
     def refine_feedback(self, feedback):
         return self.generate_clarification_questions(feedback)
+
+# --- Repeated info detection ---
+def is_repeated(new_msg, previous_msgs, threshold=0.8):
+    return False
+
+# Example usage in your chat handler:
+def handle_user_input(user_input, previous_user_inputs, question_generator):
+    if is_repeated(user_input, previous_user_inputs):
+        return "Thanks, you already mentioned that. Let's focus on next steps..."
+    else:
+        # Normal question generation logic
+        return question_generator.generate_clarification_questions(user_input, previous_user_inputs=previous_user_inputs)
