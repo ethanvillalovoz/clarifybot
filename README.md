@@ -6,6 +6,10 @@
 
 ClarifyBot is an interactive research system that demonstrates how autonomous agents can learn from imperfect human feedback by refining reward inference through clarification questions. Leveraging large language models (LLMs) and a simple reinforcement learning (RL) loop, ClarifyBot adaptively selects question-generation strategies based on user feedback, making the agent more aligned with human expectations.
 
+## How the RL Loop Works
+
+ClarifyBot uses an explicit reinforcement learning (RL) loop—specifically, an epsilon-greedy bandit algorithm—to adaptively select which question template or prompt style to use for each clarification. At each step, the system either explores a new template (with probability epsilon) or exploits the template with the highest estimated reward. User feedback is logged and used to update the reward estimates for each template, enabling ClarifyBot to learn which question styles are most effective over time, even when feedback is imperfect or noisy.
+
 ## Features
 
 - **Interactive Feedback Modeling:** Generates clarification questions in response to ambiguous or noisy human feedback, enabling more accurate understanding of user preferences.
@@ -79,3 +83,10 @@ Contributions are welcome! Please submit a pull request or open an issue for sug
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
+
+## Limitations and Future Work
+
+- **Template Diversity:** Currently, the system uses a fixed set of question templates. Future work could explore dynamic template generation or fine-tuning LLMs for clarification.
+- **Bandit Algorithms:** Only epsilon-greedy and UCB are implemented; more advanced algorithms (e.g., Thompson Sampling) could be explored.
+- **Personalization:** The system does not yet personalize to individual users or contexts; adding user modeling could further improve alignment.
+- **Scalability:** The current implementation is designed for research and demonstration; scaling to production would require further engineering and evaluation.
